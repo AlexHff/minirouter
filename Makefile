@@ -80,7 +80,3 @@ dist: dist-clean
 
 tags:
 	ctags *.c
-	
-submit:
-	@tar -czf router-submit.tar.gz $(sr_SRCS) $(sr_HDRS) README Makefile
-
