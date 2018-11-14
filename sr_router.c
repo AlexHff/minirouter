@@ -78,7 +78,11 @@ void sr_handlepacket(struct sr_instance* sr,
 
   printf("*** -> Received packet of length = %d bytes\n",len);
 
-  ethertype(packet);
+  uint8_t type = ethertype(packet);
+  if(type == 0)
+    printf("       type = IP\n");
+  else
+    printf("       type = ARP\n");
 
 }/* end sr_ForwardPacket */
 
