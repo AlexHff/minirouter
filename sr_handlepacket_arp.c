@@ -9,15 +9,14 @@
 #include "sr_utils.h"
 #include "sr_handlepacket_arp.h"
 
-void show()
-{
-    printf("hello\n");
-}
-
 void sr_handlepacket_arp(struct sr_instance* sr,
                      uint8_t * packet/* lent */,
                      unsigned int len,
                      char* interface/* lent */)
 {
-    printf("Hello, this is working!\n");
+    sr_ethernet_hdr_t *hdr_eth = (sr_ethernet_hdr_t*) packet;
+    sr_arp_hdr_t *hdr_arp = (sr_arp_hdr_t*) packet;
+    print_hdr_ip(packet);
+    print_hdr_eth(hdr_eth);
+    print_hdr_arp(hdr_arp);
 }
