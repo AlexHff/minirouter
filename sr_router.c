@@ -21,6 +21,7 @@
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
+#include "sr_handlepacket_arp.h"
 
 /*---------------------------------------------------------------------
  * Method: sr_init(void)
@@ -67,22 +68,30 @@ void sr_init(struct sr_instance* sr)
  *---------------------------------------------------------------------*/
 
 void sr_handlepacket(struct sr_instance* sr,
-        uint8_t * packet/* lent */,
-        unsigned int len,
-        char* interface/* lent */)
+                     uint8_t * packet/* lent */,
+                     unsigned int len,
+                     char* interface/* lent */)
 {
-  /* REQUIRES */
-  assert(sr);
-  assert(packet);
-  assert(interface);
+    /* REQUIRES */
+    assert(sr);
+    assert(packet);
+    assert(interface);
 
-  printf("*** -> Received packet of length = %d bytes\n",len);
+    printf("*** -> Received packet of length %d \n",len);
 
-  uint8_t type = ethertype(packet);
-  if(type == 0)
-    printf("       type = IP\n");
-  else
-    printf("       type = ARP\n");
+    switch(ethertype(packet))
+    {
+    case ethertype_arp:
+        printf("      type = ARP\n");
+        /*show();*/
+        break;
+    case ethertype_ip:
+        printf("      type = ARP\n");
+        break;
+    default:
+        fprintf(stderr, "Not ARP or IP\n");
+        return;
+    }
 
 }/* end sr_ForwardPacket */
 
