@@ -14,36 +14,39 @@ void sr_handlepacket_arp(struct sr_instance* sr,
                          unsigned int len,
                          char* interface/* lent */)
 {
-    /* verify that ARP is of correct length*/
-    if (sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t) > len)
+    /* Verify ARP is of correct length*/
+    if(sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t) > len)
     {
-        fprintf(stderr, "      Error in ARP length, dropping packet.\n");
+        fprintf(stderr, "Error in ARP length, dropping packet.\n");
         return;
     }
     else
     {
+        /* Get interface the packet is for */
+        struct sr_if *recv_interface = sr_get_interface(sr, interface);
+
+        /* Extract hdr from packet */
         sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
-        sr_arp_hdr_t *ahdr = (sr_arp_hdr_t*) packet;
+        sr_arp_hdr_t *ahdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-        uint16_t atype = 0;
+        /* Cache every ARP we get */
+        sr_arpcache_insert(&sr->cache, ahdr->ar_sha, ahdr->ar_sip);
 
-        if(arptype(ahdr) == 6665)
-            atype = 1;
-        else if (arptype(ahdr) == 6666)
-            atype = 2;
+        print_hdr_arp(packet);
 
-        switch(atype)
+        /* Find ARP type to proceed appropriately */
+        switch(arptype(ahdr))
         {
         case arp_op_request:
             printf("request\n");
-            sr_handlepacket_arp_request(sr, packet, len, interface, ehdr, ahdr);
+            sr_handlepacket_arp_request(sr, packet, len, recv_interface, ehdr, ahdr);
             break;
         case arp_op_reply:
             printf("reply\n");
             /*sr_handlepacket_arp_reply();*/
             break;
         default:
-            fprintf(stderr, "      Error in ARP type, dropping packet.\n");
+            fprintf(stderr, "Error in ARP type, dropping packet.\n");
             return;
         }
     }
@@ -52,9 +55,29 @@ void sr_handlepacket_arp(struct sr_instance* sr,
 void sr_handlepacket_arp_request(struct sr_instance* sr,
                                  uint8_t * packet/* lent */,
                                  unsigned int len,
-                                 char* interface/* lent */,
+                                 struct sr_if* recv_interface,
                                  sr_ethernet_hdr_t *ehdr,
                                  sr_arp_hdr_t *ahdr)
 {
-
+    /* Verify if ARP request is for the right IP */
+    if (ahdr->ar_tip != recv_interface->ip)
+    {
+        fprintf(stderr, "Request not for correct interface, dropping packet.\n");
+        return;
+    }
+    else
+    {
+        /*
+        function handle_arpreq(req):
+           if difftime(now, req->sent) > 1.0
+               if req->times_sent >= 5:
+                   send icmp host unreachable to source addr of all pkts waiting on this request
+                   arpreq_destroy(req)
+               else:
+                   send arp request
+                   req->sent = now
+                   req->times_sent++
+        */
+        uint8_t *arp_rep = (uint8_t *)malloc(len);
+    }
 }
