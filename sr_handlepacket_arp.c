@@ -10,34 +10,51 @@
 #include "sr_handlepacket_arp.h"
 
 void sr_handlepacket_arp(struct sr_instance* sr,
-                     uint8_t * packet/* lent */,
-                     unsigned int len,
-                     char* interface/* lent */)
+                         uint8_t * packet/* lent */,
+                         unsigned int len,
+                         char* interface/* lent */)
 {
-    sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
-    sr_arp_hdr_t *ahdr = (sr_arp_hdr_t*) packet;
-
-    switch(arptype(ahdr))
+    /* verify that ARP is of correct length*/
+    if (sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t) > len)
     {
+        fprintf(stderr, "      Error in ARP length, dropping packet.\n");
+        return;
+    }
+    else
+    {
+        sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+        sr_arp_hdr_t *ahdr = (sr_arp_hdr_t*) packet;
+
+        uint16_t atype = 0;
+
+        if(arptype(ahdr) == 6665)
+            atype = 1;
+        else if (arptype(ahdr) == 6666)
+            atype = 2;
+
+        switch(atype)
+        {
         case arp_op_request:
-            printf("      Received ARP request.");
+            printf("request\n");
             sr_handlepacket_arp_request(sr, packet, len, interface, ehdr, ahdr);
             break;
         case arp_op_reply:
-            printf("      Received ARP reply.");
+            printf("reply\n");
             /*sr_handlepacket_arp_reply();*/
             break;
         default:
             fprintf(stderr, "      Error in ARP type, dropping packet.\n");
+            return;
+        }
     }
 }
 
 void sr_handlepacket_arp_request(struct sr_instance* sr,
-                     uint8_t * packet/* lent */,
-                     unsigned int len,
-                     char* interface/* lent */,
-                     sr_ethernet_hdr_t *ehdr,
-                     sr_arp_hdr_t *ahdr)
+                                 uint8_t * packet/* lent */,
+                                 unsigned int len,
+                                 char* interface/* lent */,
+                                 sr_ethernet_hdr_t *ehdr,
+                                 sr_arp_hdr_t *ahdr)
 {
 
 }
