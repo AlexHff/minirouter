@@ -78,6 +78,22 @@ void sr_handlepacket_arp_request(struct sr_instance* sr,
                    req->sent = now
                    req->times_sent++
         */
-        uint8_t *arp_rep = (uint8_t *)malloc(len);
+
+        /* Create new reply packet */
+        uint8_t *packet_rep = (uint8_t *) malloc(len);
+
+        /* Get hdr from packet */
+        sr_ethernet_hdr_t *ehdr_rep = (sr_ethernet_hdr_t*) packet_rep;
+        sr_arp_hdr_t *ahdr_rep = (sr_arp_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t));
+
+        /* Update all fields of packet */
+        ahdr_rep->ar_hln = ahdr->ar_hln;
+        ahdr_rep->ar_hrd = ahdr->ar_hrd;
+        ahdr_rep->ar_op = htons(arp_op_reply);
+        ahdr_rep->ar_pln = ahdr->ar_pln;
+        ahdr_rep->ar_pro = ahdr->ar_pro;
+        ahdr_rep->ar_sha;
+
+        print_hdr_arp(ahdr_rep);
     }
 }
