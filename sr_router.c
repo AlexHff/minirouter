@@ -86,7 +86,7 @@ void sr_handlepacket(struct sr_instance* sr,
         sr_handlepacket_arp(sr, packet, len, interface);
         break;
     case ethertype_ip:
-        printf("      type = ARP\n");
+        printf("      type = IP\n");
         break;
     default:
         fprintf(stderr, "Not ARP or IP\n");

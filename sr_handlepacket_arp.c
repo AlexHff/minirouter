@@ -14,9 +14,30 @@ void sr_handlepacket_arp(struct sr_instance* sr,
                      unsigned int len,
                      char* interface/* lent */)
 {
-    sr_ethernet_hdr_t *hdr_eth = (sr_ethernet_hdr_t*) packet;
-    sr_arp_hdr_t *hdr_arp = (sr_arp_hdr_t*) packet;
-    print_hdr_ip(packet);
-    print_hdr_eth(hdr_eth);
-    print_hdr_arp(hdr_arp);
+    sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+    sr_arp_hdr_t *ahdr = (sr_arp_hdr_t*) packet;
+
+    switch(arptype(ahdr))
+    {
+        case arp_op_request:
+            printf("      Received ARP request.");
+            sr_handlepacket_arp_request(sr, packet, len, interface, ehdr, ahdr);
+            break;
+        case arp_op_reply:
+            printf("      Received ARP reply.");
+            /*sr_handlepacket_arp_reply();*/
+            break;
+        default:
+            fprintf(stderr, "      Error in ARP type, dropping packet.\n");
+    }
+}
+
+void sr_handlepacket_arp_request(struct sr_instance* sr,
+                     uint8_t * packet/* lent */,
+                     unsigned int len,
+                     char* interface/* lent */,
+                     sr_ethernet_hdr_t *ehdr,
+                     sr_arp_hdr_t *ahdr)
+{
+
 }

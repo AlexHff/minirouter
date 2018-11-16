@@ -31,6 +31,7 @@
 uint16_t cksum(const void *_data, int len);
 
 uint16_t ethertype(uint8_t *buf);
+uint16_t arptype(sr_arp_hdr_t *buf);
 uint8_t ip_protocol(uint8_t *buf);
 
 void print_addr_eth(uint8_t *addr);

@@ -25,6 +25,11 @@ uint16_t ethertype(uint8_t *buf) {
   return ntohs(ehdr->ether_type);
 }
 
+uint16_t arptype(sr_arp_hdr_t *buf) {
+  sr_arp_hdr_t *ahdr = buf;
+  return ntohs(ahdr->ar_op);
+}
+
 uint8_t ip_protocol(uint8_t *buf) {
   sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(buf);
   return iphdr->ip_p;
