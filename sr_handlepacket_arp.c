@@ -105,7 +105,7 @@ void sr_handlepacket_arp_request(struct sr_instance* sr,
         ahdr_rep->ar_sip = ahdr->ar_tip;
 
         /** ETH HDR **/
-        ehdr_rep->ether_type = ntohs(ethertype_arp);
+        ehdr_rep->ether_type = ethertype_arp;
 
         printf("ETHERTYPE ARP = %u", ehdr_rep->ether_type);
 
