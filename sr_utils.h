@@ -46,4 +46,6 @@ void print_hdr_arp(uint8_t *buf);
 /* prints all headers, starting from eth */
 void print_hdrs(uint8_t *buf, uint32_t length);
 
+void sr_sendpacket_arp_request(struct sr_instance* , unsigned int, struct sr_if*);
+
 #endif /* -- SR_UTILS_H -- */

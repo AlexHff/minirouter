@@ -76,7 +76,7 @@ void sr_handlepacket(struct sr_instance* sr,
     assert(sr);
     assert(packet);
     assert(interface);
-
+/*
     printf("*** -> Received packet of length %d \n",len);
 
     switch(ethertype(packet))
@@ -86,12 +86,15 @@ void sr_handlepacket(struct sr_instance* sr,
         sr_handlepacket_arp(sr, packet, len, interface);
         break;
     case ethertype_ip:
-        printf("Packet is an IP\n");
+        printf("Packet is IP\n");
         break;
     default:
         fprintf(stderr, "Not ARP or IP\n");
         return;
     }
+*/
+    /*struct sr_if *send_interface = sr_iface_for_dst(sr, );*/
+    sr_sendpacket_arp_request(sr, len, interface);
 
 }/* end sr_ForwardPacket */
 

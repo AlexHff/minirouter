@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "sr_protocol.h"
+#include "sr_router.h"
 #include "sr_utils.h"
-
 
 uint16_t cksum (const void *_data, int len) {
   const uint8_t *data = _data;
@@ -188,3 +188,47 @@ void print_hdrs(uint8_t *buf, uint32_t length) {
   }
 }
 
+void sr_sendpacket_arp_request(struct sr_instance* sr,
+                                unsigned int len,
+                                struct sr_if* send_interface)
+{
+  /* Create new reply packet */
+  uint8_t *packet = (uint8_t *) malloc(len);
+  sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+  sr_arp_hdr_t *ahdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+
+  /** ARP HDR **/
+  /* Fill std arp header */
+  ahdr->ar_hln = ETHER_ADDR_LEN;
+  ahdr->ar_hrd = htons(arp_hrd_ethernet);
+  ahdr->ar_op = htons(arp_op_request);
+  ahdr->ar_pln = 4;
+  ahdr->ar_pro = htons(ethertype_ip);
+
+  int i = 255;
+  char broadcast[ETHER_ADDR_LEN];
+  sprintf(broadcast, "%d", i);
+
+  /*  */
+  memset(ahdr->ar_tha, '\0', sizeof(ahdr->ar_tha));
+  strcpy(ahdr->ar_tha, broadcast);
+  memset(ahdr->ar_sha, '\0', sizeof(ahdr->ar_sha));
+  strcpy(ahdr->ar_sha, send_interface->addr);
+
+  /*  */
+  ahdr->ar_tip = ahdr->ar_sip;
+  ahdr->ar_sip = ahdr->ar_tip;
+
+  /** ETH HDR **/
+  /*  */
+  memset(ehdr->ether_dhost, '\0', sizeof(ehdr->ether_dhost));
+  strcpy(ehdr->ether_dhost, broadcast);
+  memset(ehdr->ether_shost, '\0', sizeof(ehdr->ether_shost));
+  strcpy(ehdr->ether_shost, send_interface->addr);
+
+  ehdr->ether_type = ntohs(ethertype_arp);
+
+  /* Send packet */
+  sr_send_packet(sr, packet, len, send_interface->name);
+  printf("Sending ARP request of length %d \n", len);
+}
