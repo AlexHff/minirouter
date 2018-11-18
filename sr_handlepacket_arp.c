@@ -105,24 +105,19 @@ void sr_handlepacket_arp_request(struct sr_instance* sr,
         ahdr_rep->ar_sip = ahdr->ar_tip;
 
         /** ETH HDR **/
-        ehdr_rep->ether_type = ethertype_arp;
-
-        printf("ETHERTYPE ARP = %u", ehdr_rep->ether_type);
-
         /* Inverse sender/target MAC address */
         memset(ehdr_rep->ether_dhost, '\0', sizeof(ehdr_rep->ether_dhost));
         strcpy(ehdr_rep->ether_dhost, ehdr->ether_shost);
         memset(ehdr_rep->ether_shost, '\0', sizeof(ehdr_rep->ether_shost));
         strcpy(ehdr_rep->ether_shost, recv_interface->addr);
 
-        print_hdrs(packet_rep, len);
-        /*print_hdr_arp(ahdr);
-        print_hdr_eth(ehdr);
-        print_hdr_arp(ahdr_rep);
-        print_hdr_eth(ehdr_rep);*/
+        ehdr_rep->ether_type = ntohs(ethertype_arp);
+
+        /*print_hdrs(packet, len);*/
 
         /* Send packet */
-        /*sr_send_packet(sr, packet_rep, len, interface);
-        printf("*** -> Sending ARP reply of length %d \n", len);*/
+        sr_send_packet(sr, packet_rep, len, interface);
+        printf("Sending ARP reply of length %d \n", len);
+        /*print_hdrs(packet_rep, len);*/
     }
 }

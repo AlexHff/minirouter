@@ -82,11 +82,11 @@ void sr_handlepacket(struct sr_instance* sr,
     switch(ethertype(packet))
     {
     case ethertype_arp:
-        printf("ARP ");
+        printf("Packet is an ARP ");
         sr_handlepacket_arp(sr, packet, len, interface);
         break;
     case ethertype_ip:
-        printf("IP\n");
+        printf("Packet is an IP\n");
         break;
     default:
         fprintf(stderr, "Not ARP or IP\n");
