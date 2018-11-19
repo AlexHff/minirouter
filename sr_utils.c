@@ -204,12 +204,10 @@ void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
   {
     if (rtable->dest.s_addr == req->ip) {
       struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
-    }
-    
+    }    
     else {
       struct sr_if *send_interface = NULL;
     }
-
     rtable = rtable->next;
   }
 

@@ -16,9 +16,9 @@ void sr_handlepacket_arp(struct sr_instance* sr,
                          char* interface/* lent */)
 {
     /* Verify ARP is of correct length*/
-    if(sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t) > len)
-    {
-        fprintf(stderr, "Error in ARP length, dropping packet.\n");
+    int minlength = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+    if (len < minlength) {
+        fprintf(stderr, "Failed to handle arp packet, insufficient length\n");
         return;
     }
     else
@@ -34,26 +34,22 @@ void sr_handlepacket_arp(struct sr_instance* sr,
         struct sr_arpreq *recv_arp = sr_arpcache_insert(&sr->cache, ahdr->ar_sha, ahdr->ar_sip);
 
         /* Verify if ARP request is for the right IP */
-        if (ahdr->ar_tip == recv_interface->ip)
-        {
+        if (ahdr->ar_tip == recv_interface->ip) {
             /* Find ARP type to proceed appropriately */
-            switch(arptype(ahdr))
-            {
-            case arp_op_request:
+            if(arptype(ahdr) == arp_op_request) {
                 printf("request\n");
                 sr_handlepacket_arp_request(sr, packet, len, recv_interface, ehdr, ahdr, interface);
-                break;
-            case arp_op_reply:
+            }
+            else if(arptype(ahdr) == arp_op_reply) {
                 printf("reply\n");
                 sr_handlepacket_arp_reply(sr, packet, len, recv_interface, interface, recv_arp, ehdr, ahdr);
-                break;
-            default:
+            }
+            else {
                 fprintf(stderr, "Unknown ARP type, dropping packet.\n");
                 return;
             }
         }
-        else
-        {
+        else {
             fprintf(stderr, "Packet not for correct interface, dropping packet.\n");
             return;
         }
@@ -140,11 +136,13 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
             /* Since we modified packet, we need to recompute checksum */
             sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
             iphdr->ip_sum = 0;
-            iphdr->ip_sum = cksum((const void *)iphdr, sizeof(sr_ip_hdr_t)); 
+            iphdr->ip_sum = cksum(iphdr, sizeof(sr_ip_hdr_t)); 
 
             sr_send_packet(sr, packet, len, recv_interface->name);
 
             packet_queue = packet_queue->next;
         }
+        /* Remove received arp from cache */
+        sr_arpreq_destroy(&sr->cache, recv_arp);
     }
 }

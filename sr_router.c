@@ -78,17 +78,15 @@ void sr_handlepacket(struct sr_instance* sr,
     assert(interface);
 
     printf("*** -> Received packet of length %d \n",len);
-
-    switch(ethertype(packet))
-    {
-    case ethertype_arp:
+    
+    if (ethertype(packet) == ethertype_arp) {
         printf("Packet is an ARP ");
         sr_handlepacket_arp(sr, packet, len, interface);
-        break;
-    case ethertype_ip:
+    }
+    else if (ethertype(packet) == ethertype_ip) {
         printf("Packet is IP\n");
-        break;
-    default:
+    }
+    else {
         fprintf(stderr, "Not ARP or IP\n");
         return;
     }
