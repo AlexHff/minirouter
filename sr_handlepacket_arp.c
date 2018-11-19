@@ -45,7 +45,7 @@ void sr_handlepacket_arp(struct sr_instance* sr,
                 break;
             case arp_op_reply:
                 printf("reply\n");
-                sr_handlepacket_arp_reply(sr, packet, len, recv_interface, interface, recv_arp);
+                sr_handlepacket_arp_reply(sr, packet, len, recv_interface, interface, recv_arp, ehdr, ahdr);
                 break;
             default:
                 fprintf(stderr, "Unknown ARP type, dropping packet.\n");
@@ -112,7 +112,9 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
                                  unsigned int len,
                                  struct sr_if* recv_interface,
                                  char* interface,
-                                 struct sr_arpreq *recv_arp)
+                                 struct sr_arpreq *recv_arp,
+                                 sr_ethernet_hdr_t *ehdr,
+                                 sr_arp_hdr_t *ahdr)
 {
     
     if(!recv_arp)
@@ -129,7 +131,20 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
         unsigned int i;
         for(i = 0; i < sizeof(packet_queue); ++i)
         {
-            printf("hello\n");
+            /* Set destination and source hosts in eth header */
+            memset(ehdr->ether_dhost, '\0', sizeof(ehdr->ether_dhost));
+            strcpy(ehdr->ether_dhost, ahdr->ar_sha);
+            memset(ehdr->ether_shost, '\0', sizeof(ehdr->ether_shost));
+            strcpy(ehdr->ether_shost, recv_interface->addr);
+
+            /* Since we modified packet, we need to recompute checksum */
+            sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+            iphdr->ip_sum = 0;
+            iphdr->ip_sum = cksum((const void *)iphdr, sizeof(sr_ip_hdr_t)); 
+
+            sr_send_packet(sr, packet, len, recv_interface->name);
+
+            packet_queue = packet_queue->next;
         }
     }
 }

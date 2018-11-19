@@ -92,6 +92,6 @@ void sr_handlepacket(struct sr_instance* sr,
         fprintf(stderr, "Not ARP or IP\n");
         return;
     }
-    
+
 }/* end sr_ForwardPacket */
 

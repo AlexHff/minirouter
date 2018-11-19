@@ -4,6 +4,7 @@
 #include "sr_protocol.h"
 #include "sr_router.h"
 #include "sr_utils.h"
+#include "sr_rt.h"
 
 uint16_t cksum (const void *_data, int len) {
   const uint8_t *data = _data;
@@ -190,13 +191,29 @@ void print_hdrs(uint8_t *buf, uint32_t length) {
 
 void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
 {
-  /* Create new reply packet */
+  /* Create new request packet */
   int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
   uint8_t *packet = (uint8_t *) malloc(len);
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
   sr_arp_hdr_t *ahdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
+  struct sr_rt *rtable = sr->routing_table;
   struct sr_if *send_interface = NULL;
+  unsigned int j;
+  for(j = 0; j < sizeof(rtable); j++)
+  {
+    if (rtable->dest.s_addr == req->ip) {
+      struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
+    }
+    
+    else {
+      struct sr_if *send_interface = NULL;
+    }
+
+    rtable = rtable->next;
+  }
+
+  sr_print_routing_table(sr);
 
   /** ARP HDR **/
   /* Fill std arp header */
