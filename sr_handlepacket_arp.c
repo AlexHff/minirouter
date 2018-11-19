@@ -68,19 +68,6 @@ void sr_handlepacket_arp_request(struct sr_instance* sr,
                                  sr_arp_hdr_t *ahdr,
                                  char* interface)
 {
-    
-    /*
-    function handle_arpreq(req):
-    if difftime(now, req->sent) > 1.0
-        if req->times_sent >= 5:
-            send icmp host unreachable to source addr of all pkts waiting on this request
-            arpreq_destroy(req)
-        else:
-            send arp request
-            req->sent = now
-            req->times_sent++
-    */
-
     /* Create new reply packet */
     uint8_t *packet_rep = (uint8_t *) malloc(len);
 
@@ -138,6 +125,7 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
         /* Packet queue */
         struct sr_packet *packet_queue = recv_arp->packets;
         
+        /* Run through queue */
         unsigned int i;
         for(i = 0; i < sizeof(packet_queue); ++i)
         {

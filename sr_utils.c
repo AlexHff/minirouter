@@ -217,7 +217,7 @@ void sr_sendpacket_arp_request(struct sr_instance* sr,
 
   /*  */
   ahdr->ar_tip = ahdr->ar_sip;
-  ahdr->ar_sip = ahdr->ar_tip;
+  ahdr->ar_sip = send_interface->ip;
 
   /** ETH HDR **/
   /*  */
@@ -227,6 +227,8 @@ void sr_sendpacket_arp_request(struct sr_instance* sr,
   strcpy(ehdr->ether_shost, send_interface->addr);
 
   ehdr->ether_type = ntohs(ethertype_arp);
+
+  print_hdrs(packet, len);
 
   /* Send packet */
   sr_send_packet(sr, packet, len, send_interface->name);
