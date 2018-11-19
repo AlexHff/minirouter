@@ -188,15 +188,16 @@ void print_hdrs(uint8_t *buf, uint32_t length) {
   }
 }
 
-void sr_sendpacket_arp_request(struct sr_instance* sr,
-                                unsigned int len,
-                                struct sr_if* send_interface)
+void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
 {
   /* Create new reply packet */
+  int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
   uint8_t *packet = (uint8_t *) malloc(len);
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
   sr_arp_hdr_t *ahdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
+  struct sr_if *send_interface = NULL;
+  
   /** ARP HDR **/
   /* Fill std arp header */
   ahdr->ar_hln = ETHER_ADDR_LEN;
@@ -216,7 +217,7 @@ void sr_sendpacket_arp_request(struct sr_instance* sr,
   strcpy(ahdr->ar_sha, send_interface->addr);
 
   /*  */
-  ahdr->ar_tip = ahdr->ar_sip;
+  ahdr->ar_tip = req->ip;
   ahdr->ar_sip = send_interface->ip;
 
   /** ETH HDR **/

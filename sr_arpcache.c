@@ -10,6 +10,7 @@
 #include "sr_router.h"
 #include "sr_if.h"
 #include "sr_protocol.h"
+#include "sr_utils.h"
 
 /* 
   This function gets called every second. For each request sent out, we keep
@@ -17,7 +18,50 @@
   See the comments in the header file for an idea of what it should look like.
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
-    /* Fill this in */
+    /* for each request on sr->cache.requests:
+           handle_arpreq(request) */
+
+    struct sr_arpreq* request = sr->cache.requests;
+
+    unsigned int i = 0;
+    for(i = 0; i < sizeof(request); i++)
+    {
+        handle_arpreq(sr, request);
+        request = request->next;
+    }
+    
+}
+
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
+{
+    /* if difftime(now, req->sent) > 1.0
+           if req->times_sent >= 5:
+               send icmp host unreachable to source addr of all pkts waiting
+                 on this request
+               arpreq_destroy(req)
+           else:
+               send arp request
+               req->sent = now
+               req->times_sent++ */
+
+    struct sr_arpcache *cache = &sr->cache;
+    time_t now = time(NULL);
+    
+    if (difftime(now, req->sent) > 1.0) {
+        if (req->times_sent >= 5) {
+            /* send icmp host unreachable to source addr of all pkts waiting
+                 on this request */
+            sr_arpreq_destroy(cache, req);
+        }
+        
+        else
+        {
+            sr_sendpacket_arp_request(sr, req);
+            req->sent = now;
+            req->times_sent++;
+        }
+    }
+    
 }
 
 /* You should not need to touch the rest of this code. */

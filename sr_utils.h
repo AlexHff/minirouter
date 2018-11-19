@@ -34,6 +34,8 @@ uint16_t ethertype(uint8_t *buf);
 uint16_t arptype(sr_arp_hdr_t *buf);
 uint8_t ip_protocol(uint8_t *buf);
 
+void sr_sendpacket_arp_request(struct sr_instance *, struct sr_arpreq *);
+
 void print_addr_eth(uint8_t *addr);
 void print_addr_ip(struct in_addr address);
 void print_addr_ip_int(uint32_t ip);
@@ -45,7 +47,5 @@ void print_hdr_arp(uint8_t *buf);
 
 /* prints all headers, starting from eth */
 void print_hdrs(uint8_t *buf, uint32_t length);
-
-void sr_sendpacket_arp_request(struct sr_instance* , unsigned int, struct sr_if*);
 
 #endif /* -- SR_UTILS_H -- */
