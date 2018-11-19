@@ -197,7 +197,7 @@ void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
   sr_arp_hdr_t *ahdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
   struct sr_if *send_interface = NULL;
-  
+
   /** ARP HDR **/
   /* Fill std arp header */
   ahdr->ar_hln = ETHER_ADDR_LEN;
@@ -216,7 +216,7 @@ void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
   memset(ahdr->ar_sha, '\0', sizeof(ahdr->ar_sha));
   strcpy(ahdr->ar_sha, send_interface->addr);
 
-  /*  */
+  /* Sender and receiver IP */
   ahdr->ar_tip = req->ip;
   ahdr->ar_sip = send_interface->ip;
 

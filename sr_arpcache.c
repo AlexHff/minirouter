@@ -26,10 +26,14 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     unsigned int i = 0;
     for(i = 0; i < sizeof(request); i++)
     {
-        handle_arpreq(sr, request);
-        request = request->next;
+        
+        if (request != NULL) {
+            handle_arpreq(sr, request);
+            request = request->next;
+        }
+        else
+            i = sizeof(request);
     }
-    
 }
 
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
@@ -45,7 +49,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
                req->times_sent++ */
 
     struct sr_arpcache *cache = &sr->cache;
-    time_t now = time(NULL);
+    time_t now = time(0);
     
     if (difftime(now, req->sent) > 1.0) {
         if (req->times_sent >= 5) {
