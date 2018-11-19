@@ -26,4 +26,5 @@ void sr_handlepacket_ip(struct sr_instance* sr,
         fprintf(stderr, "Failed to handle ip packet, checksum does not match\n");
         return;
     }
+    printf("IP is good\n");
 }
