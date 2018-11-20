@@ -85,7 +85,7 @@ void sr_handlepacket(struct sr_instance* sr,
         sr_handlepacket_arp(sr, packet, len, interface);
     }
     else if (ethertype(packet) == ethertype_ip) {
-        printf("Packet is IP\n");
+        printf("Packet is ");
         sr_handlepacket_ip(sr, packet, len);
     }
     else {
