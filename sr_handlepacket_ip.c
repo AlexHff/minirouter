@@ -22,21 +22,42 @@ void sr_handlepacket_ip(struct sr_instance* sr,
         return;
     }
 
+    /* Check if ttl is correct */
     sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-    switch (iphdr->ip_p)
+    if (iphdr->ip_ttl == 0) {
+        fprintf(stderr, "TTL=0, ");
+    }
+
+    /* Check if packet is for router's interface */
+    struct sr_if *interface_list = sr->if_list;
+    unsigned int i;
+    int for_router = 0;
+    for(i = 0; i < 3; i++)
     {
-        case ip_protocol_icmp:
-            printf("ICMP\n");
-            sr_handlepacket_icmp(sr, packet, len, iphdr, interface);
-            break;
-        case ip_protocol_tcp:
-        case ip_protocol_udp:
-            printf("UDP/TCP\n");
-            sr_handlepacket_tcp_udp(sr, packet, iphdr, interface);
-            break;
-        default:
-        printf("Unknown protocol, dropping packet\n");
-            break;
+        if(iphdr->ip_dst == interface_list->ip) {
+            for_router = 1;
+            switch (iphdr->ip_p)
+            {
+                case ip_protocol_icmp:
+                    printf("ICMP\n");
+                    sr_handlepacket_icmp(sr, packet, len, iphdr, interface);
+                    break;
+                case ip_protocol_tcp:
+                case ip_protocol_udp:
+                    printf("UDP/TCP\n");
+                    sr_handlepacket_tcp_udp(sr, packet, iphdr, interface);
+                    break;
+                default:
+                printf("Unknown protocol, dropping packet\n");
+                    break;
+            }
+        }
+        interface_list = interface_list->next;
+    }
+
+    /* Packet is not for router, fwd */
+    if(for_router == 0) {
+        iphdr->ip_ttl--;
     }
 }
 
@@ -54,6 +75,7 @@ void sr_handlepacket_icmp(struct sr_instance* sr,
         return;
     }
     else {
+        iphdr->ip_sum = sum;
         sr_icmp_t11_hdr_t *icmphdr = (sr_icmp_t11_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
         
         if (icmphdr->icmp_type == icmp_type_echo_request) {
@@ -62,15 +84,52 @@ void sr_handlepacket_icmp(struct sr_instance* sr,
                 return;
             }
             else {
-                send_icmp_packet_reply(sr, packet, interface, iphdr, icmphdr);
+                send_icmp_packet_reply(sr, packet, len, interface, iphdr, icmphdr);
             }
         }
         
     }
 }
 
-void send_icmp_packet_reply(struct sr_instance* sr, uint8_t *packet,
+void send_icmp_packet_reply(struct sr_instance* sr, uint8_t *packet, unsigned int len,
                     char *interface, sr_ip_hdr_t *iphdr, sr_icmp_t11_hdr_t *icmphdr)
+{
+    print_hdr_icmp(icmphdr);
+    printf("//////////////////////////////\n");
+    /* Router's interface */
+    struct sr_if *send_interface = sr_get_interface(sr, interface);
+
+    /* Get eth hdr from packet */
+    sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+    
+    /** ETH HDR **/
+    /* Inverse sender/target MAC address */
+    memcpy(ehdr->ether_dhost, ehdr->ether_shost, ETHER_ADDR_LEN);
+    memcpy(ehdr->ether_shost, send_interface->addr, ETHER_ADDR_LEN);
+    ehdr->ether_type = htons(ethertype_ip);
+
+    /** IP HDR **/
+    /* Sender and receiver IP */
+    iphdr->ip_dst = iphdr->ip_src;
+    iphdr->ip_src = send_interface->ip;
+    iphdr->ip_ttl = 100;
+    iphdr->ip_sum = 0;
+    iphdr->ip_sum = cksum(iphdr, sizeof(sr_ip_hdr_t));
+
+    icmphdr->icmp_type = icmp_type_echo_reply;
+    icmphdr->icmp_code = icmphdr->icmp_code;
+    icmphdr->icmp_sum = 0;
+    icmphdr->icmp_sum = cksum(icmphdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
+
+    print_hdr_icmp(icmphdr);
+
+    /* Send packet */
+    sr_send_packet(sr, packet, len, send_interface->name);
+    printf("Sending ICMP echo reply of length %d \n", len);
+}
+
+void sr_handlepacket_tcp_udp(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_t *iphdr,
+                         char *interface)
 {
     /* Create new reply packet */
     unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t11_hdr_t);
@@ -81,16 +140,17 @@ void send_icmp_packet_reply(struct sr_instance* sr, uint8_t *packet,
 
     /* Get hdr from packet */
     sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+    sr_icmp_t11_hdr_t *icmphdr = (sr_icmp_t11_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+    /* Create new hdrs */
     sr_ethernet_hdr_t *ehdr_rep = (sr_ethernet_hdr_t*) packet_rep;
     sr_ip_hdr_t *iphdr_rep = (sr_ip_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t));
     sr_icmp_t11_hdr_t *icmphdr_rep = (sr_icmp_t11_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
     /** ETH HDR **/
     /* Inverse sender/target MAC address */
-    memset(ehdr_rep->ether_dhost, '\0', sizeof(ehdr_rep->ether_dhost));
-    strcpy(ehdr_rep->ether_dhost, ehdr->ether_shost);
-    memset(ehdr_rep->ether_shost, '\0', sizeof(ehdr_rep->ether_shost));
-    strcpy(ehdr_rep->ether_shost, send_interface->addr);
+    memcpy(ehdr_rep->ether_dhost, ehdr->ether_shost, ETHER_ADDR_LEN);
+    memcpy(ehdr_rep->ether_shost, send_interface->addr, ETHER_ADDR_LEN);
     ehdr_rep->ether_type = ntohs(ethertype_ip);
 
     /** IP HDR **/
@@ -99,15 +159,16 @@ void send_icmp_packet_reply(struct sr_instance* sr, uint8_t *packet,
     iphdr_rep->ip_src = send_interface->ip;
     iphdr_rep->ip_v = iphdr->ip_v;
     iphdr_rep->ip_hl = iphdr->ip_hl;
-    iphdr_rep->ip_id = iphdr->ip_id;
+    iphdr_rep->ip_id = 0;
     iphdr_rep->ip_len = htons(len - sizeof(sr_ethernet_hdr_t));
-    iphdr_rep->ip_off = iphdr->ip_off;
-    iphdr_rep->ip_p = iphdr->ip_p;
+    iphdr_rep->ip_off = htons(IP_DF);
+    iphdr_rep->ip_p = ip_protocol_icmp;
     iphdr_rep->ip_tos = iphdr->ip_tos;
-    iphdr_rep->ip_ttl = iphdr->ip_ttl - 1;
+    iphdr_rep->ip_ttl = INIT_TTL;
     iphdr_rep->ip_sum = 0;
     iphdr_rep->ip_sum = cksum(iphdr_rep, sizeof(sr_ip_hdr_t));
 
+    /** ICMP HDR **/
     icmphdr_rep->icmp_type = icmp_type_echo_reply;
     icmphdr_rep->icmp_code = icmphdr->icmp_code;
     icmphdr_rep->icmp_sum = 0;
@@ -115,10 +176,10 @@ void send_icmp_packet_reply(struct sr_instance* sr, uint8_t *packet,
 
     /* Send packet */
     sr_send_packet(sr, packet_rep, len, send_interface->name);
-    printf("Sending ICMP echo reply of length %d \n", len);
+    printf("Sending ICMP host unreachable of length %d \n", len);
 }
 
-void sr_handlepacket_tcp_udp(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_t *iphdr,
+void sr_handlepacket_ttl_exceeded(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_t *iphdr,
                          char *interface)
 {
     /* Create new reply packet */
@@ -161,12 +222,12 @@ void sr_handlepacket_tcp_udp(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_
     iphdr_rep->ip_sum = cksum(iphdr_rep, sizeof(sr_ip_hdr_t));
 
     /** ICMP HDR **/
-    icmphdr_rep->icmp_type = icmp_type_echo_reply;
-    icmphdr_rep->icmp_code = icmphdr->icmp_code;
+    icmphdr_rep->icmp_type = icmp_type_time_exceeded;
+    icmphdr_rep->icmp_code = icmp_code_ttl_exceeded;
     icmphdr_rep->icmp_sum = 0;
     icmphdr_rep->icmp_sum = cksum(icmphdr_rep, sizeof(sr_icmp_t11_hdr_t));
 
     /* Send packet */
     sr_send_packet(sr, packet_rep, len, send_interface->name);
-    printf("Sending ICMP host unreachable of length %d \n", len);
+    printf("sending ICMP TTL exceeded of length %d \n", len);
 }
