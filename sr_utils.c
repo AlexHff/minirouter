@@ -244,7 +244,7 @@ void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
 
   ehdr->ether_type = ntohs(ethertype_arp);
 
-  print_hdrs(packet, len);
+  printf("sr_sendpacket_arp_request\n");
 
   /* Send packet */
   sr_send_packet(sr, packet, len, send_interface->name);

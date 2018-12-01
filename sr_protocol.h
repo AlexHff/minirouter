@@ -140,6 +140,23 @@ enum sr_ip_protocol {
   ip_protocol_udp = 0x00017,
 };
 
+enum sr_icmp_type {
+  icmp_type_echo_request = 0x0008,
+  icmp_type_echo_reply = 0x0000,
+  icmp_type_destination_unreachable = 0x0003,
+  icmp_type_time_exceeded = 0x00011,
+};
+
+enum sr_icmp_code {
+  icmp_code_net_unreachable = 0x0000,
+  icmp_code_host_unreachable = 0x0001,
+  icmp_code_protocol_unreachable = 0x0002,
+  icmp_code_port_unreachable = 0x0003,
+  icmp_code_fragmentation = 0x0004,
+  icmp_code_source_route_failed = 0x0005,
+  icmp_code_ttl_exceeded = 0x0000,
+};
+
 enum sr_ethertype {
   ethertype_arp = 0x0806,
   ethertype_ip = 0x0800,
