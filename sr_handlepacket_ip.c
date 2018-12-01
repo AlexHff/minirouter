@@ -52,13 +52,16 @@ void sr_handlepacket_ip(struct sr_instance* sr,
         interface_list = interface_list->next;
     }
 
-    iphdr->ip_ttl = 1;
     /* Packet is not for router, fwd */
     if(for_router == 0) {
         /* Check if ttl is correct */
         if (iphdr->ip_ttl == 1) {
             printf("TTL=0, ");
             sr_handlepacket_ttl_exceeded(sr, packet, iphdr, interface);
+        }
+        else {
+             printf("not for the router, forwarding\n");
+             sr_handle_forwarding(sr, packet, iphdr, interface);
         }
     }
 }
@@ -229,4 +232,29 @@ void sr_handlepacket_ttl_exceeded(struct sr_instance* sr, uint8_t *packet, sr_ip
     /* Send packet */
     sr_send_packet(sr, packet_rep, len, send_interface->name);
     printf("sending ICMP TTL exceeded of length %d \n", len);
+}
+
+void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_t *iphdr,
+                         char *interface)
+{
+    struct sr_rt *rtable = sr->routing_table;
+    struct sr_if *send_interface = NULL;
+    unsigned int j;
+    for(j = 0; j < sizeof(rtable); j++)
+    {
+        if (rtable->dest.s_addr == iphdr->ip_dst) {
+            struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
+            printf("Found destination via interface %s\n", rtable->interface);
+
+            /* Set eth hdr */
+            sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+            /*memcpy(ehdr->ether_dhost, , ETHER_ADDR_LEN);
+            memcpy(ehdr->ether_shost, send_interface->addr, ETHER_ADDR_LEN);*/
+            return;
+        }    
+        else {
+            struct sr_if *send_interface = NULL;
+        }
+        rtable = rtable->next;
+    }
 }
