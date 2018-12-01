@@ -211,8 +211,6 @@ void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
     rtable = rtable->next;
   }
 
-  sr_print_routing_table(sr);
-
   /** ARP HDR **/
   /* Fill std arp header */
   ahdr->ar_hln = ETHER_ADDR_LEN;

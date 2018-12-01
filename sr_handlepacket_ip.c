@@ -61,7 +61,8 @@ void sr_handlepacket_ip(struct sr_instance* sr,
         }
         else {
              printf("not for the router, forwarding\n");
-             sr_handle_forwarding(sr, packet, iphdr, interface);
+             sr_handle_forwarding(sr, packet, len, iphdr, interface);
+             fprintf(stderr, "7\n");
         }
     }
 }
@@ -234,27 +235,44 @@ void sr_handlepacket_ttl_exceeded(struct sr_instance* sr, uint8_t *packet, sr_ip
     printf("sending ICMP TTL exceeded of length %d \n", len);
 }
 
-void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_t *iphdr,
-                         char *interface)
+void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int len,
+                        sr_ip_hdr_t *iphdr, char *interface)
 {
-    struct sr_rt *rtable = sr->routing_table;
+    /*struct sr_rt *rtable = sr->routing_table;
     struct sr_if *send_interface = NULL;
     unsigned int j;
-    for(j = 0; j < sizeof(rtable); j++)
+    for(j = 0; j < 3; j++)
     {
+        printf("interface = %s\n", rtable->interface);
         if (rtable->dest.s_addr == iphdr->ip_dst) {
             struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
             printf("Found destination via interface %s\n", rtable->interface);
 
-            /* Set eth hdr */
-            sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
-            /*memcpy(ehdr->ether_dhost, , ETHER_ADDR_LEN);
-            memcpy(ehdr->ether_shost, send_interface->addr, ETHER_ADDR_LEN);*/
-            return;
+            struct sr_arpentry *next_hop = sr_arpcache_lookup(&(sr->cache), iphdr->ip_dst);
+            
+            if (next_hop != NULL) {
+                /* Set eth hdr */
+                /*sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
+                memcpy(ehdr->ether_dhost, next_hop->mac, ETHER_ADDR_LEN);
+                memcpy(ehdr->ether_shost, send_interface->addr, ETHER_ADDR_LEN);
+            }
+            else {
+                printf("no entry in arp table\n");
+                struct sr_arpreq *req = sr_arpcache_queuereq(&sr->cache, 
+                                iphdr->ip_dst, packet, len, send_interface->name);
+                fprintf(stderr, "1\n");
+                fprintf(stderr, "2\n");
+            }
+            fprintf(stderr, "3\n");
+            /*return;*/
+            /*j = sizeof(rtable);
+            fprintf(stderr, "4\n");
         }    
         else {
+            fprintf(stderr, "5\n");
             struct sr_if *send_interface = NULL;
         }
+        fprintf(stderr, "6\n");
         rtable = rtable->next;
-    }
+    }*/
 }

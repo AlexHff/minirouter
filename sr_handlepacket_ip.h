@@ -10,7 +10,7 @@ void sr_handlepacket_tcp_udp(struct sr_instance* , uint8_t *,
                             sr_ip_hdr_t *, char *);
 void sr_handlepacket_ttl_exceeded(struct sr_instance* , uint8_t *,
                             sr_ip_hdr_t *, char *);
-void sr_handle_forwarding(struct sr_instance* , uint8_t *,
+void sr_handle_forwarding(struct sr_instance* , uint8_t *, unsigned int,
                             sr_ip_hdr_t *, char *);
 
 #endif
