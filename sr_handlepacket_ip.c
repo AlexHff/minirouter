@@ -62,7 +62,6 @@ void sr_handlepacket_icmp(struct sr_instance* sr,
                 return;
             }
             else {
-                print_hdrs(packet, len);
                 send_icmp_packet_reply(sr, packet, interface, iphdr, icmphdr);
             }
         }
@@ -101,7 +100,7 @@ void send_icmp_packet_reply(struct sr_instance* sr, uint8_t *packet,
     iphdr_rep->ip_v = iphdr->ip_v;
     iphdr_rep->ip_hl = iphdr->ip_hl;
     iphdr_rep->ip_id = iphdr->ip_id;
-    iphdr_rep->ip_len = iphdr->ip_len;
+    iphdr_rep->ip_len = htons(len - sizeof(sr_ethernet_hdr_t));
     iphdr_rep->ip_off = iphdr->ip_off;
     iphdr_rep->ip_p = iphdr->ip_p;
     iphdr_rep->ip_tos = iphdr->ip_tos;
