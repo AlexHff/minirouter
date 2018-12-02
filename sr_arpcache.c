@@ -60,7 +60,6 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
             unsigned int i;
             for(i = 0; i < sizeof(packet_queue); i++)
             {
-                print_hdrs(packet_queue->buf, 98);
                 sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet_queue->buf + sizeof(sr_ethernet_hdr_t));
                 sr_handlepacket_tcp_udp(sr, packet_queue->buf, iphdr, packet_queue->iface);
 

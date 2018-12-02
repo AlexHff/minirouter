@@ -33,20 +33,18 @@ void sr_handlepacket_ip(struct sr_instance* sr,
     {
         if(iphdr->ip_dst == interface_list->ip) {
             for_router = 1;
-            switch (iphdr->ip_p)
-            {
-                case ip_protocol_icmp:
-                    printf("ICMP\n");
-                    sr_handlepacket_icmp(sr, packet, len, iphdr, interface);
-                    break;
-                case ip_protocol_tcp:
-                case ip_protocol_udp:
-                    printf("UDP/TCP\n");
-                    sr_handlepacket_tcp_udp(sr, packet, iphdr, interface);
-                    break;
-                default:
+            /* Find type of IP */            
+            if (iphdr->ip_p == ip_protocol_icmp) {
+                printf("ICMP\n");
+                sr_handlepacket_icmp(sr, packet, len, iphdr, interface);
+            }
+            else 
+            if ((iphdr->ip_p == ip_protocol_tcp) || (iphdr->ip_p == ip_protocol_udp)) {
+                printf("UDP/TCP\n");
+                sr_handlepacket_tcp_udp(sr, packet, iphdr, interface);
+            }
+            else {
                 printf("Unknown protocol, dropping packet\n");
-                    break;
             }
         }
         interface_list = interface_list->next;
@@ -142,7 +140,6 @@ void sr_handlepacket_tcp_udp(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_
 
     /* Get hdr from packet */
     sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
-    sr_icmp_t11_hdr_t *icmphdr = (sr_icmp_t11_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
     /* Create new hdrs */
     sr_ethernet_hdr_t *ehdr_rep = (sr_ethernet_hdr_t*) packet_rep;
@@ -241,7 +238,7 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
 {
     struct sr_rt *rtable = sr->routing_table;
     unsigned int j;
-    for(j = 0; j < 3; j++)
+    for(j = 0; j < sizeof(rtable); j++)
     {
         if (rtable->dest.s_addr == iphdr->ip_dst) {
             struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
@@ -254,15 +251,18 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                 sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
                 memcpy(ehdr->ether_dhost, next_hop->mac, ETHER_ADDR_LEN);
                 memcpy(ehdr->ether_shost, send_interface->addr, ETHER_ADDR_LEN);
+                sr_send_packet(sr, packet, len, send_interface->name);
             }
             else {
                 struct sr_arpreq *arpreq = sr_arpcache_queuereq(&sr->cache, 
                                 iphdr->ip_dst, packet, len, send_interface->name);
                 handle_arpreq(sr, arpreq);
             }
-            return;
             j = sizeof(rtable);
         }
-        rtable = rtable->next;
+        if(rtable->next != NULL)
+            rtable = rtable->next;
+        else
+            j = sizeof(rtable);
     }
 }
