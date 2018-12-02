@@ -80,10 +80,8 @@ void sr_handlepacket_arp_request(struct sr_instance* sr,
     ahdr_rep->ar_pro = ahdr->ar_pro;
 
     /* Inverse sender/target hardware address */
-    memset(ahdr_rep->ar_tha, '\0', sizeof(ahdr_rep->ar_tha));
-    strcpy(ahdr_rep->ar_tha, ahdr->ar_sha);
-    memset(ahdr_rep->ar_sha, '\0', sizeof(ahdr_rep->ar_sha));
-    strcpy(ahdr_rep->ar_sha, recv_interface->addr);
+    memcpy(ahdr_rep->ar_tha, ahdr->ar_sha, ETHER_ADDR_LEN);
+    memcpy(ahdr_rep->ar_sha, recv_interface->addr, ETHER_ADDR_LEN);
 
     /* Inverse sender/target ip address */
     ahdr_rep->ar_tip = ahdr->ar_sip;
@@ -91,11 +89,8 @@ void sr_handlepacket_arp_request(struct sr_instance* sr,
 
     /** ETH HDR **/
     /* Inverse sender/target MAC address */
-    memset(ehdr_rep->ether_dhost, '\0', sizeof(ehdr_rep->ether_dhost));
-    strcpy(ehdr_rep->ether_dhost, ehdr->ether_shost);
-    memset(ehdr_rep->ether_shost, '\0', sizeof(ehdr_rep->ether_shost));
-    strcpy(ehdr_rep->ether_shost, recv_interface->addr);
-
+    memcpy(ehdr_rep->ether_dhost, ehdr->ether_shost, ETHER_ADDR_LEN);
+    memcpy(ehdr_rep->ether_shost, recv_interface->addr, ETHER_ADDR_LEN);
     ehdr_rep->ether_type = ntohs(ethertype_arp);
 
     /* Send packet */
@@ -127,20 +122,24 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
         unsigned int i;
         for(i = 0; i < sizeof(packet_queue); ++i)
         {
+            uint8_t *packet_rep = packet_queue->buf;
+            sr_ethernet_hdr_t *ehdr_rep = (sr_ethernet_hdr_t *) packet_rep;
+
             /* Set destination and source hosts in eth header */
-            memset(ehdr->ether_dhost, '\0', sizeof(ehdr->ether_dhost));
-            strcpy(ehdr->ether_dhost, ahdr->ar_sha);
-            memset(ehdr->ether_shost, '\0', sizeof(ehdr->ether_shost));
-            strcpy(ehdr->ether_shost, recv_interface->addr);
+            memcpy(ehdr_rep->ether_dhost, ahdr->ar_sha, ETHER_ADDR_LEN);
+            memcpy(ehdr_rep->ether_shost, recv_interface->addr, ETHER_ADDR_LEN);
 
             /* Since we modified packet, we need to recompute checksum */
-            sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+            sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t));
             iphdr->ip_sum = 0;
             iphdr->ip_sum = cksum(iphdr, sizeof(sr_ip_hdr_t)); 
 
-            sr_send_packet(sr, packet, len, recv_interface->name);
+            sr_send_packet(sr, packet_rep, packet_queue->len, recv_interface->name);
 
-            packet_queue = packet_queue->next;
+            if(packet_queue->next != NULL)
+                packet_queue = packet_queue->next;
+            else
+                i = sizeof(packet_queue);
         }
         /* Remove received arp from cache */
         sr_arpreq_destroy(&sr->cache, recv_arp);

@@ -49,23 +49,23 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
                req->times_sent++ */
 
     struct sr_arpcache *cache = &sr->cache;
-    time_t now = time(0);
-    
+    time_t now = time(NULL);
+    pthread_mutex_lock(&(cache->lock));
+
     if (difftime(now, req->sent) > 1.0) {
         if (req->times_sent >= 5) {
             /* send icmp host unreachable to source addr of all pkts waiting
                  on this request */
+            fprintf(stderr, "ARP request found no answer, send ICMP host unreachable\n");
             sr_arpreq_destroy(cache, req);
         }
-        
-        else
-        {
+        else {
             sr_sendpacket_arp_request(sr, req);
             req->sent = now;
             req->times_sent++;
         }
     }
-    
+    pthread_mutex_unlock(&(cache->lock));
 }
 
 /* You should not need to touch the rest of this code. */

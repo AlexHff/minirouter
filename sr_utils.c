@@ -189,7 +189,7 @@ void print_hdrs(uint8_t *buf, uint32_t length) {
   }
 }
 
-void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
+void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq* req)
 {
   /* Create new request packet */
   int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -197,52 +197,24 @@ void sr_sendpacket_arp_request(struct sr_instance *sr, struct sr_arpreq *req)
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
   sr_arp_hdr_t *ahdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-  struct sr_rt *rtable = sr->routing_table;
-  struct sr_if *send_interface = NULL;
-  unsigned int j;
-  for(j = 0; j < sizeof(rtable); j++)
-  {
-    if (rtable->dest.s_addr == req->ip) {
-      struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
-    }    
-    else {
-      struct sr_if *send_interface = NULL;
-    }
-    rtable = rtable->next;
-  }
+  struct sr_if *send_interface = sr_get_interface(sr, req->packets->iface);
 
   /** ARP HDR **/
-  /* Fill std arp header */
+  /* Fill arp header */
   ahdr->ar_hln = ETHER_ADDR_LEN;
   ahdr->ar_hrd = htons(arp_hrd_ethernet);
   ahdr->ar_op = htons(arp_op_request);
   ahdr->ar_pln = 4;
   ahdr->ar_pro = htons(ethertype_ip);
-
-  int i = 255;
-  char broadcast[ETHER_ADDR_LEN];
-  sprintf(broadcast, "%d", i);
-
-  /*  */
-  memset(ahdr->ar_tha, '\0', sizeof(ahdr->ar_tha));
-  strcpy(ahdr->ar_tha, broadcast);
-  memset(ahdr->ar_sha, '\0', sizeof(ahdr->ar_sha));
-  strcpy(ahdr->ar_sha, send_interface->addr);
-
-  /* Sender and receiver IP */
+  memset(ahdr->ar_tha, 0xff, ETHER_ADDR_LEN);
+  memcpy(ahdr->ar_sha, send_interface->addr, ETHER_ADDR_LEN);
   ahdr->ar_tip = req->ip;
   ahdr->ar_sip = send_interface->ip;
 
   /** ETH HDR **/
-  /*  */
-  memset(ehdr->ether_dhost, '\0', sizeof(ehdr->ether_dhost));
-  strcpy(ehdr->ether_dhost, broadcast);
-  memset(ehdr->ether_shost, '\0', sizeof(ehdr->ether_shost));
-  strcpy(ehdr->ether_shost, send_interface->addr);
-
+  memcpy(ehdr->ether_shost, send_interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memset(ehdr->ether_dhost, 0xff, sizeof(uint8_t) * ETHER_ADDR_LEN);
   ehdr->ether_type = ntohs(ethertype_arp);
-
-  printf("sr_sendpacket_arp_request\n");
 
   /* Send packet */
   sr_send_packet(sr, packet, len, send_interface->name);
