@@ -56,7 +56,7 @@ void sr_handlepacket_ip(struct sr_instance* sr,
     if(for_router == 0) {
         /* Check if ttl is correct */
         if (iphdr->ip_ttl == 1) {
-            printf("TTL=0, ");
+            printf("TTL=1, ");
             sr_handlepacket_ttl_exceeded(sr, packet, iphdr, interface);
         }
         else {
@@ -176,6 +176,8 @@ void sr_handlepacket_tcp_udp(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_
     memcpy(icmphdr_rep->data, iphdr, ICMP_DATA_SIZE);
     icmphdr_rep->icmp_sum = 0;
     icmphdr_rep->icmp_sum = cksum(icmphdr_rep, sizeof(sr_icmp_t11_hdr_t));
+
+    print_hdrs(packet_rep, len);
 
     /* Send packet */
     sr_send_packet(sr, packet_rep, len, send_interface->name);

@@ -81,17 +81,19 @@ void sr_handlepacket(struct sr_instance* sr,
     printf("*** -> Received packet of length %d \n",len);
     
     if (ethertype(packet) == ethertype_arp) {
-        printf("Packet is an ARP ");
+        printf("Packet is ARP ");
         sr_handlepacket_arp(sr, packet, len, interface);
     }
     else if (ethertype(packet) == ethertype_ip) {
-        printf("Packet is ");
+        printf("Packet is IP ");
         sr_handlepacket_ip(sr, packet, len, interface);
     }
     else {
-        fprintf(stderr, "Not ARP or IP\n");
+        fprintf(stderr, "Unknown\n");
         return;
     }
+
+    printf("\n");
 
 }/* end sr_ForwardPacket */
 
