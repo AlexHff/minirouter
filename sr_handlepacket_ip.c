@@ -252,6 +252,7 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                 memcpy(ehdr->ether_dhost, next_hop->mac, ETHER_ADDR_LEN);
                 memcpy(ehdr->ether_shost, send_interface->addr, ETHER_ADDR_LEN);
                 sr_send_packet(sr, packet, len, send_interface->name);
+                free(next_hop);
             }
             else {
                 struct sr_arpreq *arpreq = sr_arpcache_queuereq(&sr->cache, 
