@@ -52,7 +52,6 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
     struct sr_arpcache *cache = &sr->cache;
     time_t now = time(NULL);
     pthread_mutex_lock(&(cache->lock));
-
     if (difftime(now, req->sent) > 1.0) {
         if (req->times_sent >= 5) {
             struct sr_packet *packet_queue = req->packets;

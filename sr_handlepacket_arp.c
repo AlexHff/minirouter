@@ -117,7 +117,7 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
     {
         /* Packet queue */
         struct sr_packet *packet_queue = recv_arp->packets;
-        
+
         /* Run through queue */
         unsigned int i;
         for(i = 0; i < sizeof(packet_queue); ++i)

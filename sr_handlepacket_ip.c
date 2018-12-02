@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "sr_if.h"
 #include "sr_rt.h"
@@ -255,8 +256,23 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                 free(next_hop);
             }
             else {
-                struct sr_arpreq *arpreq = sr_arpcache_queuereq(&sr->cache, 
-                                iphdr->ip_dst, packet, len, send_interface->name);
+                printf("searching for next hop\n");
+                /* Store packet in arpcache */
+                struct sr_arpreq *arpreq = sr_arpcache_queuereq(&sr->cache, iphdr->ip_dst, packet, len, send_interface->name);
+                
+                /* Access packet queue */
+                struct sr_packet *packet_queue = arpreq->packets;
+                unsigned int i;
+                for(i = 0; i < sizeof(packet_queue); ++i)
+                {
+                    /*printf("sizeof queue = %d\n", sizeof(packet_queue));
+                    print_hdrs(packet_queue->buf, packet_queue->len);*/
+
+                    if(packet_queue->next != NULL)
+                        packet_queue = packet_queue->next;
+                    else
+                        i = sizeof(packet_queue);
+                }
                 handle_arpreq(sr, arpreq);
             }
             j = sizeof(rtable);
