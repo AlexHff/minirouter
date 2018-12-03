@@ -239,10 +239,8 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                         sr_ip_hdr_t *iphdr, char *interface)
 {
     struct sr_rt *rtable = sr->routing_table;
-    unsigned int j;
-    for(j = 0; j < sizeof(rtable); j++)
-    {
-        if (rtable->dest.s_addr == iphdr->ip_dst) {
+    while(rtable) {
+        if ((rtable->dest.s_addr & rtable->mask.s_addr) == (iphdr->ip_dst & rtable->mask.s_addr)) {
             struct sr_if *send_interface = sr_get_interface(sr, rtable->interface);
             printf("Found destination via interface %s\n", rtable->interface);
 
@@ -260,27 +258,10 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                 printf("searching for next hop\n");
                 /* Store packet in arpcache */
                 struct sr_arpreq *arpreq = sr_arpcache_queuereq(&sr->cache, iphdr->ip_dst, packet, len, send_interface->name);
-                fprintf(stderr, "\tinc packet id: %d\n", ntohs(iphdr->ip_id));
-
-                /* Access packet queue */
-                struct sr_packet *packet_queue = (struct sr_packet *)malloc(sizeof(struct sr_packet));
-                packet_queue = arpreq->packets;
-
-                unsigned int i = 0;
-                while(packet_queue != NULL){
-                    sr_ip_hdr_t *iphdrb = (sr_ip_hdr_t *)(packet_queue->buf + sizeof(sr_ethernet_hdr_t));
-                    fprintf(stderr, "\tin queue packet id %d : %d\n", i, ntohs(iphdrb->ip_id));
-                    i++;
-                    packet_queue = packet_queue->next;
-                }
-
                 handle_arpreq(sr, arpreq);
             }
-            j = sizeof(rtable);
+            return;
         }
-        if(rtable->next != NULL)
-            rtable = rtable->next;
-        else
-            j = sizeof(rtable);
+        rtable = rtable->next;
     }
 }
