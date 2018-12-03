@@ -79,6 +79,7 @@ struct sr_packet {
     unsigned int len;           /* Length of raw Ethernet frame */
     char *iface;                /* The outgoing interface */
     struct sr_packet *next;
+    int empty;
 };
 
 struct sr_arpentry {

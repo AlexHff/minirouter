@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "sr_if.h"
 #include "sr_rt.h"
@@ -116,7 +117,8 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
     else
     {
         /* Packet queue */
-        struct sr_packet *packet_queue = recv_arp->packets;
+        struct sr_packet *packet_queue = (struct sr_packet *)malloc(sizeof(struct sr_packet));
+        packet_queue = recv_arp->packets;
 
         /* Run through queue */
         unsigned int i;
@@ -131,6 +133,7 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
 
             /* Since we modified packet, we need to recompute checksum */
             sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t));
+            fprintf(stderr, "\tworking queue packet id %d : %d\n", i, ntohs(iphdr->ip_id));
             iphdr->ip_sum = 0;
             iphdr->ip_sum = cksum(iphdr, sizeof(sr_ip_hdr_t)); 
 

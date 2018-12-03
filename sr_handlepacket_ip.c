@@ -259,15 +259,18 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                 printf("searching for next hop\n");
                 /* Store packet in arpcache */
                 struct sr_arpreq *arpreq = sr_arpcache_queuereq(&sr->cache, iphdr->ip_dst, packet, len, send_interface->name);
-                
+                fprintf(stderr, "\tinc packet id: %d\n", ntohs(iphdr->ip_id));
+
                 /* Access packet queue */
-                struct sr_packet *packet_queue = arpreq->packets;
+                struct sr_packet *packet_queue = (struct sr_packet *)malloc(sizeof(struct sr_packet));
+                packet_queue = arpreq->packets;
+                printf("SIZEOF QUEUE = %lu\n", sizeof(packet_queue));
                 unsigned int i;
                 for(i = 0; i < sizeof(packet_queue); ++i)
                 {
-                    /*printf("sizeof queue = %d\n", sizeof(packet_queue));
-                    print_hdrs(packet_queue->buf, packet_queue->len);*/
-
+                    sr_ip_hdr_t *iphdrb = (sr_ip_hdr_t *)(packet_queue->buf + sizeof(sr_ethernet_hdr_t));
+                    fprintf(stderr, "\tin queue packet id %d : %d\n", i, ntohs(iphdrb->ip_id));
+                    
                     if(packet_queue->next != NULL)
                         packet_queue = packet_queue->next;
                     else
