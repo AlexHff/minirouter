@@ -55,18 +55,11 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq* req)
     if (difftime(now, req->sent) > 1.0) {
         if (req->times_sent >= 5) {
             struct sr_packet *packet_queue = req->packets;
-            
-            unsigned int i;
-            for(i = 0; i < sizeof(packet_queue); i++)
-            {
-                sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet_queue->buf + sizeof(sr_ethernet_hdr_t));
-                
-                sr_handlepacket_tcp_udp(sr, packet_queue->buf, iphdr, packet_queue->iface);
 
-                if(packet_queue->next != NULL)
-                    packet_queue = packet_queue->next;
-                else
-                    i = sizeof(packet_queue);
+            while(packet_queue != NULL){
+                sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet_queue->buf + sizeof(sr_ethernet_hdr_t));
+                sr_handlepacket_tcp_udp(sr, packet_queue->buf, iphdr, packet_queue->iface);
+                packet_queue = packet_queue->next;
             }
             
             fprintf(stderr, "ARP request found no answer\n");

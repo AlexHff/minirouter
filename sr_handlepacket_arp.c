@@ -121,10 +121,28 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
         packet_queue = recv_arp->packets;
 
         /* Run through queue */
-        unsigned int i;
-        for(i = 0; i < sizeof(packet_queue); ++i)
-        {
-            uint8_t *packet_rep = packet_queue->buf;
+        unsigned int i = 0;
+        unsigned int q_length = 0;
+
+        while(packet_queue != NULL){
+            q_length++;
+            packet_queue = packet_queue->next;
+            i++;
+        }
+        packet_queue = recv_arp->packets;
+        
+        struct sr_packet *fifo_queue[q_length];
+        i = q_length-1;
+        while(packet_queue != NULL){
+            fifo_queue[i] = packet_queue;
+            packet_queue = packet_queue->next;
+            i--;
+        }
+        packet_queue = recv_arp->packets;
+
+        i = 0;
+        while(packet_queue != NULL){
+            uint8_t *packet_rep = fifo_queue[i]->buf;
             sr_ethernet_hdr_t *ehdr_rep = (sr_ethernet_hdr_t *) packet_rep;
 
             /* Set destination and source hosts in eth header */
@@ -133,16 +151,12 @@ void sr_handlepacket_arp_reply(struct sr_instance* sr,
 
             /* Since we modified packet, we need to recompute checksum */
             sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t));
-            fprintf(stderr, "\tworking queue packet id %d : %d\n", i, ntohs(iphdr->ip_id));
             iphdr->ip_sum = 0;
             iphdr->ip_sum = cksum(iphdr, sizeof(sr_ip_hdr_t)); 
 
             sr_send_packet(sr, packet_rep, packet_queue->len, recv_interface->name);
-
-            if(packet_queue->next != NULL)
-                packet_queue = packet_queue->next;
-            else
-                i = sizeof(packet_queue);
+            packet_queue = packet_queue->next;
+            i++;
         }
         /* Remove received arp from cache */
         sr_arpreq_destroy(&sr->cache, recv_arp);

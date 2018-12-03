@@ -225,7 +225,8 @@ void sr_handlepacket_ttl_exceeded(struct sr_instance* sr, uint8_t *packet, sr_ip
     /** ICMP HDR **/
     icmphdr_rep->icmp_type = icmp_type_time_exceeded;
     icmphdr_rep->icmp_code = icmp_code_ttl_exceeded;
-    memcpy(icmphdr_rep->data, iphdr, ICMP_DATA_SIZE);
+    icmphdr_rep->unused = 0;
+    memcpy(icmphdr_rep->data, iphdr, sizeof(sr_ip_hdr_t)+8);
     icmphdr_rep->icmp_sum = 0;
     icmphdr_rep->icmp_sum = cksum(icmphdr, sizeof(sr_icmp_t11_hdr_t));
 
@@ -264,18 +265,15 @@ void sr_handle_forwarding(struct sr_instance* sr, uint8_t *packet, unsigned int 
                 /* Access packet queue */
                 struct sr_packet *packet_queue = (struct sr_packet *)malloc(sizeof(struct sr_packet));
                 packet_queue = arpreq->packets;
-                printf("SIZEOF QUEUE = %lu\n", sizeof(packet_queue));
-                unsigned int i;
-                for(i = 0; i < sizeof(packet_queue); ++i)
-                {
+
+                unsigned int i = 0;
+                while(packet_queue != NULL){
                     sr_ip_hdr_t *iphdrb = (sr_ip_hdr_t *)(packet_queue->buf + sizeof(sr_ethernet_hdr_t));
                     fprintf(stderr, "\tin queue packet id %d : %d\n", i, ntohs(iphdrb->ip_id));
-                    
-                    if(packet_queue->next != NULL)
-                        packet_queue = packet_queue->next;
-                    else
-                        i = sizeof(packet_queue);
+                    i++;
+                    packet_queue = packet_queue->next;
                 }
+
                 handle_arpreq(sr, arpreq);
             }
             j = sizeof(rtable);
