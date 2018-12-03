@@ -28,12 +28,12 @@ void sr_handlepacket_ip(struct sr_instance* sr,
 
     /* Check if packet is for router's interface */
     struct sr_if *interface_list = sr->if_list;
-    unsigned int i;
     int for_router = 0;
-    for(i = 0; i < 3; i++)
+    while(interface_list != NULL)
     {
         if(iphdr->ip_dst == interface_list->ip) {
             for_router = 1;
+            printf("FOR ROUTER\n");
             /* Find type of IP */            
             if (iphdr->ip_p == ip_protocol_icmp) {
                 printf("ICMP\n");
@@ -175,8 +175,6 @@ void sr_handlepacket_tcp_udp(struct sr_instance* sr, uint8_t *packet, sr_ip_hdr_
     icmphdr_rep->icmp_sum = 0;
     icmphdr_rep->icmp_sum = cksum(icmphdr_rep, sizeof(sr_icmp_t11_hdr_t));
 
-    print_hdrs(packet_rep, len);
-
     /* Send packet */
     sr_send_packet(sr, packet_rep, len, send_interface->name);
     printf("Sending ICMP host unreachable of length %d \n", len);
@@ -194,12 +192,14 @@ void sr_handlepacket_ttl_exceeded(struct sr_instance* sr, uint8_t *packet, sr_ip
 
     /* Get hdr from packet */
     sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t*) packet;
-    sr_icmp_t11_hdr_t *icmphdr = (sr_icmp_t11_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
     /* Create new hdrs */
     sr_ethernet_hdr_t *ehdr_rep = (sr_ethernet_hdr_t*) packet_rep;
     sr_ip_hdr_t *iphdr_rep = (sr_ip_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t));
     sr_icmp_t11_hdr_t *icmphdr_rep = (sr_icmp_t11_hdr_t *)(packet_rep + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+    /* Copy data of original ip hdr */
+    memcpy(iphdr_rep, iphdr, sizeof(sr_ip_hdr_t));
 
     /** ETH HDR **/
     /* Inverse sender/target MAC address */
@@ -228,7 +228,7 @@ void sr_handlepacket_ttl_exceeded(struct sr_instance* sr, uint8_t *packet, sr_ip
     icmphdr_rep->unused = 0;
     memcpy(icmphdr_rep->data, iphdr, sizeof(sr_ip_hdr_t)+8);
     icmphdr_rep->icmp_sum = 0;
-    icmphdr_rep->icmp_sum = cksum(icmphdr, sizeof(sr_icmp_t11_hdr_t));
+    icmphdr_rep->icmp_sum = cksum(icmphdr_rep, sizeof(sr_icmp_t11_hdr_t));
 
     /* Send packet */
     sr_send_packet(sr, packet_rep, len, send_interface->name);
