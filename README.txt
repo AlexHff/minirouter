@@ -1,6 +1,8 @@
 Name: Alexander Hoffmann
 PID: U08115448
 
+I am not competing for the Espresso prize.
+
 Required Functionality
 
     The router must successfully route packets between the Internet and the application 
@@ -14,7 +16,7 @@ hop.
     
     The router must correctly handle ARP requests and replies.
     When we get a packet, check if it's ARP type. Then verifiy what kind or ARP. If ARP 
-request, then sr_handlepacket√_arp_request() in sr_handlepacket_arp.c will create a new reply 
+request, then sr_handlepacket√É_arp_request() in sr_handlepacket_arp.c will create a new reply 
 packet with the MAC address of the current interface. If it's an ARP reply, we check the 
 queue associated to the request we sent earlier. After that, we send every packet of the 
 queue respecting the FIFO principle. This was probably one of the hardest parts because it 
